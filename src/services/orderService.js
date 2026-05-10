@@ -1,7 +1,6 @@
 import { ref, push, get, update, query, orderByChild, startAt } from "firebase/database";
 import { rtdb } from "./firebase";
 
-// ✅ only this function changed
 export const placeOrder = async (order) => {
   const orderRef = push(ref(rtdb, "orders"));
   const updates = {};
@@ -30,4 +29,11 @@ export const getOrdersSince = async (timestamp) => {
   const snap = await get(q);
   if (!snap.exists()) return [];
   return Object.entries(snap.val()).map(([id, val]) => ({ id, ...val }));
+};
+
+export const updateOrderStatus = async (orderId, status) => {
+  await update(ref(rtdb, `orders/${orderId}`), {
+    status,
+    updatedAt: Date.now(),
+  });
 };

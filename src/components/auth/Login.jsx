@@ -1,58 +1,148 @@
+// src/components/auth/Login.jsx
 import { useState } from "react";
-import { loginUser } from "../../services/authService";
 import { useAuth } from "../../contexts/AuthContext";
-import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../services/firebase";
 
 export default function Login() {
-  const { setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { setUser } = useAuth();
+  const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
+
     try {
-      const user = await loginUser(email, password);
-      setUser(user);
-      toast.success(`Welcome back, ${user.name}!`);
+      // Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      
+      // The AuthProvider will automatically update the user state
+      // because onAuthStateChanged will trigger
+      
+      console.log("Login successful:", firebaseUser.email);
+      navigate("/", { replace: true }); // Redirect to admin dashboard
+      
     } catch (err) {
-      toast.error("Invalid email or password.");
+      console.error("Login error:", err);
+      switch (err.code) {
+        case 'auth/invalid-credential':
+          setError("Invalid email or password");
+          break;
+        case 'auth/user-not-found':
+          setError("User not found");
+          break;
+        case 'auth/wrong-password':
+          setError("Wrong password");
+          break;
+        default:
+          setError("Failed to login. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#f5f3ee" }}>
-      <div style={{ background:"#fff", border:"0.5px solid #e0ddd5", borderRadius:16, padding:"40px 36px", width:"100%", maxWidth:400 }}>
-        <div style={{ textAlign:"center", marginBottom:32 }}>
-          <div style={{ fontSize:40, marginBottom:8 }}>☕</div>
-          <h1 style={{ fontSize:22, fontWeight:600, color:"#1a1814", letterSpacing:"-0.5px" }}>Kape Eskinita</h1>
-          <p style={{ fontSize:13, color:"#9a9690", marginTop:4 }}>Point of Sale System</p>
-        </div>
-        <form onSubmit={handleLogin} style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <div>
-            <label style={{ fontSize:12, fontWeight:500, color:"#6b6860", display:"block", marginBottom:6 }}>Email</label>
+    <div style={{
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "#f5f3ee"
+    }}>
+      <div style={{
+        background: "white",
+        padding: "2rem",
+        borderRadius: "12px",
+        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+        width: "100%",
+        maxWidth: "400px"
+      }}>
+        <h1 style={{ textAlign: "center", marginBottom: "1rem", color: "#1a1814" }}>
+          Kape Eskinita
+        </h1>
+        <h2 style={{ textAlign: "center", marginBottom: "2rem", fontSize: "1.25rem" }}>
+          Admin Login
+        </h2>
+        
+        {error && (
+          <div style={{
+            background: "#fee",
+            color: "#c33",
+            padding: "0.75rem",
+            borderRadius: "6px",
+            marginBottom: "1rem",
+            textAlign: "center"
+          }}>
+            {error}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
+              Email
+            </label>
             <input
-              type="email" value={email} onChange={e => setEmail(e.target.value)} required
-              style={{ width:"100%", padding:"10px 12px", border:"0.5px solid #d0ccc4", borderRadius:8, fontSize:14, outline:"none", background:"#faf9f6" }}
-              placeholder="you@kapeeskinita.com"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                border: "1px solid #ddd",
+                borderRadius: "6px",
+                fontSize: "1rem"
+              }}
+              placeholder="admin@example.com"
             />
           </div>
-          <div>
-            <label style={{ fontSize:12, fontWeight:500, color:"#6b6860", display:"block", marginBottom:6 }}>Password</label>
+          
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
+              Password
+            </label>
             <input
-              type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              style={{ width:"100%", padding:"10px 12px", border:"0.5px solid #d0ccc4", borderRadius:8, fontSize:14, outline:"none", background:"#faf9f6" }}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                border: "1px solid #ddd",
+                borderRadius: "6px",
+                fontSize: "1rem"
+              }}
               placeholder="••••••••"
             />
           </div>
+          
           <button
-            type="submit" disabled={loading}
-            style={{ marginTop:8, padding:"11px", borderRadius:8, background: loading ? "#d0ccc4" : "#2d2260", color:"#ede9fd", border:"none", fontSize:14, fontWeight:600 }}
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "0.75rem",
+              background: "#1a1814",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "1rem",
+              fontWeight: 600,
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.7 : 1
+            }}
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
       </div>

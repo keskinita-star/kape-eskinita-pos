@@ -4,6 +4,16 @@
       "name": "Admin",
       "email": "admin@kapeeskinita.com",
       "role": "admin"
+    },
+    "fRwcZPKc3DXekD44RzLLjlAqukf1": {
+      "name": "Owner",
+      "email": "owner@kapeeskinita.com",
+      "role": "manager"
+    },
+    "Ai7rVLLP2pXxL4gW7xuHf299eHl1": {
+      "name": "Cashier",
+      "email": "cashier@kapeeskinita.com",
+      "role": "cashier"
     }
   }
 }
