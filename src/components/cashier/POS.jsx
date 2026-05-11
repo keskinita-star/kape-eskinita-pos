@@ -12,10 +12,10 @@ import toast from "react-hot-toast";
 
 const STATUS_FLOW = { Pending: "Preparing", Preparing: "Ready", Ready: "Completed" };
 const STATUS_STYLE = {
-  Pending:    { background: "#dbeafe", color: "#1e40af" },
-  Preparing:  { background: "#fef3c7", color: "#92400e" },
-  Ready:      { background: "#d1fae5", color: "#065f46" },
-  Completed:  { background: "#f3f4f6", color: "#6b7280" },
+  Pending:   { background: "#dbeafe", color: "#1e40af" },
+  Preparing: { background: "#fef3c7", color: "#92400e" },
+  Ready:     { background: "#d1fae5", color: "#065f46" },
+  Completed: { background: "#f3f4f6", color: "#6b7280" },
 };
 
 export default function POS() {
@@ -29,8 +29,7 @@ export default function POS() {
   const [search, setSearch] = useState("");
   const [sizeProduct, setSizeProduct] = useState(null);
 
-  // Order queue state
-  const [activeTab, setActiveTab] = useState("order");   // "order" | "queue"
+  const [activeTab, setActiveTab] = useState("order");
   const [customerOrders, setCustomerOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -46,7 +45,6 @@ export default function POS() {
     setOrdersLoading(true);
     try {
       const all = await getOrders();
-      // Show only today's non-walk-in orders, newest first
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const queue = all
         .filter(o => o.createdAt >= today.getTime() && o.status !== "Completed")
@@ -60,8 +58,6 @@ export default function POS() {
   };
 
   useEffect(() => { loadProducts(); }, []);
-
-  // Poll orders every 15 seconds when queue tab is active
   useEffect(() => {
     loadOrders();
     const interval = setInterval(loadOrders, 15000);
@@ -147,7 +143,7 @@ export default function POS() {
     }
   };
 
-  // ─── Right Panel: Current Order ───────────────────────────────────────────
+  // ─── Right Panel: Current Order ──────────────────────────────────────────
 
   function OrderPanel() {
     return (
@@ -205,27 +201,16 @@ export default function POS() {
               <div key={order.id}
                 onClick={() => setSelectedOrder(isSelected ? null : order)}
                 style={{ background: "#fff", border: `1px solid ${isSelected ? "#1a1814" : "#e8e2d9"}`, borderRadius: 10, padding: "10px 12px", cursor: "pointer", transition: "border-color 0.15s" }}>
-
-                {/* Order header */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                   <div>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1814" }}>
-                      #{String(order.id).slice(-5).toUpperCase()}
-                    </span>
-                    <span style={{ fontSize: 11, color: "#9a9690", marginLeft: 6 }}>
-                      {order.customerName || "Customer"}
-                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1814" }}>#{String(order.id).slice(-5).toUpperCase()}</span>
+                    <span style={{ fontSize: 11, color: "#9a9690", marginLeft: 6 }}>{order.customerName || "Customer"}</span>
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, ...st }}>
-                    {order.status}
-                  </span>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, ...st }}>{order.status}</span>
                 </div>
-
-                {/* Items summary */}
                 <div style={{ fontSize: 11, color: "#6b6860", marginBottom: 4 }}>
                   {(order.items || []).map(i => `${i.name} x${i.qty}`).join(" · ")}
                 </div>
-
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 11, color: "#9a9690" }}>
                     {new Date(order.createdAt).toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" })}
@@ -233,38 +218,27 @@ export default function POS() {
                   </span>
                   <span style={{ fontSize: 12, fontWeight: 600, color: "#1a1814" }}>{formatCurrency(order.total)}</span>
                 </div>
-
-                {/* Expanded detail + action */}
                 {isSelected && (
                   <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #e8e2d9" }}>
                     {order.note && (
-                      <div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", borderRadius: 6, padding: "4px 8px", marginBottom: 8 }}>
-                        📝 {order.note}
-                      </div>
+                      <div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", borderRadius: 6, padding: "4px 8px", marginBottom: 8 }}>📝 {order.note}</div>
                     )}
                     {order.payment?.method && (
-                      <div style={{ fontSize: 11, color: "#6b6860", marginBottom: 8 }}>
-                        💳 {order.payment.method}
-                      </div>
+                      <div style={{ fontSize: 11, color: "#6b6860", marginBottom: 8 }}>💳 {order.payment.method}</div>
                     )}
                     {nextStatus && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleAdvanceStatus(order); }}
+                      <button onClick={(e) => { e.stopPropagation(); handleAdvanceStatus(order); }}
                         style={{ width: "100%", padding: "8px", borderRadius: 8, background: "#1a1814", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                         Mark as {nextStatus} →
                       </button>
                     )}
-                    {!nextStatus && (
-                      <div style={{ textAlign: "center", fontSize: 12, color: "#6db87a", fontWeight: 600 }}>✅ Completed</div>
-                    )}
+                    {!nextStatus && <div style={{ textAlign: "center", fontSize: 12, color: "#6db87a", fontWeight: 600 }}>✅ Completed</div>}
                   </div>
                 )}
               </div>
             );
           })
         }
-
-        {/* Refresh button */}
         <button onClick={loadOrders} style={{ marginTop: 4, background: "none", border: "1px solid #e8e2d9", borderRadius: 8, padding: "7px", fontSize: 12, color: "#6b6860", cursor: "pointer" }}>
           ↻ Refresh
         </button>
@@ -277,8 +251,10 @@ export default function POS() {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", height: "100vh", background: "#f5f3ee", fontFamily: "'DM Sans','Segoe UI',sans-serif" }}>
 
-      {/* Menu Side */}
+      {/* ── Menu Side ── */}
       <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+        {/* Top bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", background: "#fff", borderBottom: "1px solid #e8e2d9" }}>
           <span style={{ fontSize: 16, fontWeight: 700, color: "#1a1814" }}>☕ Kape Eskinita</span>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -293,6 +269,7 @@ export default function POS() {
           </div>
         </div>
 
+        {/* Category tabs */}
         <div style={{ display: "flex", gap: 8, padding: "10px 20px", background: "#fff", borderBottom: "1px solid #e8e2d9", overflowX: "auto" }}>
           {allCategories.map(cat => (
             <button key={cat} onClick={() => setCategory(cat)}
@@ -302,47 +279,108 @@ export default function POS() {
           ))}
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: 16, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 10, alignContent: "start" }}>
+        {/* ── Product Grid — matches ProductsManagement style ── */}
+        <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
           {loading
             ? <p style={{ color: "#9a9690", fontSize: 13 }}>Loading menu...</p>
             : filtered.length === 0
             ? <p style={{ color: "#9a9690", fontSize: 13 }}>No products found.</p>
-            : filtered.map(product => {
-              const isBlocked = !product.available;
-              const isOutOfStock = product.stock <= 0;
-              const disabled = isBlocked || isOutOfStock;
-              const needsSize = !NO_SIZE_CATEGORIES.includes(product.category);
-              return (
-                <div key={product.id} onClick={() => handleProductTap(product)}
-                  style={{ background: "#fff", border: isBlocked ? "1px solid #fca5a5" : "1px solid #e8e2d9", borderRadius: 12, overflow: "hidden", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.6 : 1, transition: "all 0.15s", position: "relative" }}>
-                  {isBlocked && <div style={{ position: "absolute", top: 6, right: 6, background: "#dc2626", color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20, zIndex: 1 }}>⛔ BLOCKED</div>}
-                  {!isBlocked && isOutOfStock && <div style={{ position: "absolute", top: 6, right: 6, background: "#6b6860", color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20, zIndex: 1 }}>SOLD OUT</div>}
-                  {!disabled && needsSize && <div style={{ position: "absolute", top: 6, left: 6, background: "#4a3d8f", color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20, zIndex: 1 }}>T/G/V</div>}
-                  <div style={{ width: "100%", aspectRatio: "4/3", background: "#f5f3ee", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {product.photoUrl
-                      ? <img src={product.photoUrl} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : <span style={{ fontSize: 32 }}>☕</span>}
-                  </div>
-                  <div style={{ padding: "10px 10px 12px" }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1814", marginBottom: 2 }}>{product.name}</div>
-                    <div style={{ fontSize: 11, color: "#9a9690", marginBottom: 2 }}>
-                      {needsSize ? `from ${formatCurrency(product.price)}` : formatCurrency(product.price)}
+            : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14, alignContent: "start" }}>
+                {filtered.map(product => {
+                  const isBlocked   = !product.available;
+                  const isOutOfStock = product.stock <= 0;
+                  const disabled    = isBlocked || isOutOfStock;
+                  const needsSize   = !NO_SIZE_CATEGORIES.includes(product.category);
+
+                  return (
+                    <div key={product.id}
+                      onClick={() => handleProductTap(product)}
+                      style={{
+                        background: "#fff",
+                        border: isBlocked ? "1px solid #fca5a5" : "1px solid #e8e2d9",
+                        borderRadius: 14,
+                        overflow: "hidden",
+                        cursor: disabled ? "not-allowed" : "pointer",
+                        opacity: disabled ? 0.6 : 1,
+                        transition: "box-shadow 0.15s, transform 0.15s",
+                        position: "relative",
+                      }}
+                      onMouseEnter={e => { if (!disabled) { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.10)"; e.currentTarget.style.transform = "translateY(-2px)"; } }}
+                      onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}
+                    >
+                      {/* Status badges */}
+                      {isBlocked && (
+                        <div style={{ position: "absolute", top: 8, right: 8, background: "#dc2626", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 20, zIndex: 1 }}>⛔ BLOCKED</div>
+                      )}
+                      {!isBlocked && isOutOfStock && (
+                        <div style={{ position: "absolute", top: 8, right: 8, background: "#6b6860", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 20, zIndex: 1 }}>SOLD OUT</div>
+                      )}
+                      {!disabled && needsSize && (
+                        <div style={{ position: "absolute", top: 8, left: 8, background: "#4a3d8f", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 20, zIndex: 1 }}>T / G / V</div>
+                      )}
+
+                      {/* Photo — same 4:3 ratio as ProductsManagement */}
+                      <div style={{ width: "100%", aspectRatio: "4/3", background: "#f5f3ee", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {product.photoUrl
+                          ? <img src={product.photoUrl} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          : <span style={{ fontSize: 40 }}>☕</span>}
+                      </div>
+
+                      {/* Info */}
+                      <div style={{ padding: "12px 14px" }}>
+
+                        {/* Name + Price */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1814", lineHeight: 1.3, flex: 1 }}>{product.name}</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1814", marginLeft: 8, whiteSpace: "nowrap" }}>
+                            {needsSize ? `from ${formatCurrency(product.price)}` : formatCurrency(product.price)}
+                          </div>
+                        </div>
+
+                        {/* Description */}
+                        {product.description && (
+                          <div style={{ fontSize: 11, color: "#9a9690", marginBottom: 8, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                            {product.description}
+                          </div>
+                        )}
+
+                        {/* Category + Stock row */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+                          <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "#f5f3ee", color: "#6b6860" }}>
+                            {product.category}
+                          </span>
+                          <span style={{
+                            fontSize: 11, fontWeight: 500,
+                            color: product.stock <= 0 ? "#dc2626"
+                              : product.stock <= LOW_STOCK_THRESHOLD ? "#b45309"
+                              : "#166534",
+                          }}>
+                            {product.stock <= 0
+                              ? "Out of stock"
+                              : product.stock <= LOW_STOCK_THRESHOLD
+                              ? `⚠ Low: ${product.stock}`
+                              : `${product.stock} in stock`}
+                          </span>
+                        </div>
+
+                        {/* Blocked reason */}
+                        {isBlocked && (
+                          <div style={{ fontSize: 10, color: "#dc2626", marginTop: 6, lineHeight: 1.4 }}>
+                            Missing: {product.blockedBy.join(", ")}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    {!isBlocked && product.stock <= LOW_STOCK_THRESHOLD && product.stock > 0 && (
-                      <div style={{ fontSize: 10, color: "#b45309" }}>Low stock: {product.stock}</div>
-                    )}
-                    {isBlocked && (
-                      <div style={{ fontSize: 10, color: "#dc2626", lineHeight: 1.4 }}>Missing: {product.blockedBy.join(", ")}</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+                  );
+                })}
+              </div>
+            )
           }
         </div>
       </div>
 
-      {/* Right Panel */}
+      {/* ── Right Panel ── */}
       <div style={{ display: "flex", flexDirection: "column", background: "#f2f0eb", borderLeft: "1px solid #e8e2d9" }}>
 
         {/* Tab switcher */}

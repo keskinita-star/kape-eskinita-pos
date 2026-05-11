@@ -1,19 +1,236 @@
 {
   "users": {
-    "lyZb4TqK2tfDPJ0yA9BcPwN26CQ2": {
+    "JYtPi5ksVVaMpQkkSESvCO5MCMh1": {
       "name": "Admin",
       "email": "admin@kapeeskinita.com",
       "role": "admin"
     },
-    "fRwcZPKc3DXekD44RzLLjlAqukf1": {
+    "jY5fvGH5V7OQJSwe2hrF5FHrjRk1": {
       "name": "Owner",
       "email": "owner@kapeeskinita.com",
       "role": "manager"
     },
-    "Ai7rVLLP2pXxL4gW7xuHf299eHl1": {
+    "dM5ofJPcniUhUhV8hx3BzwrtTQH2": {
       "name": "Cashier",
       "email": "cashier@kapeeskinita.com",
       "role": "cashier"
+    }
+  },
+  "ingredients": {
+    "ing001": { "name": "Espresso Shot", "category": "Coffee Beans", "unit": "pcs", "stock": 100, "minStock": 20, "costPerUnit": 5, "supplier": "" },
+    "ing002": { "name": "Arabica Coffee Beans", "category": "Coffee Beans", "unit": "g", "stock": 5000, "minStock": 500, "costPerUnit": 0.5, "supplier": "" },
+    "ing003": { "name": "Fresh Milk", "category": "Milk and Cream", "unit": "ml", "stock": 10000, "minStock": 1000, "costPerUnit": 0.08, "supplier": "" },
+    "ing004": { "name": "All-purpose Cream", "category": "Milk and Cream", "unit": "ml", "stock": 5000, "minStock": 500, "costPerUnit": 0.1, "supplier": "" },
+    "ing005": { "name": "Condensed Milk", "category": "Milk and Cream", "unit": "ml", "stock": 3000, "minStock": 300, "costPerUnit": 0.12, "supplier": "" },
+    "ing006": { "name": "Whipped Cream", "category": "Milk and Cream", "unit": "ml", "stock": 2000, "minStock": 200, "costPerUnit": 0.15, "supplier": "" },
+    "ing007": { "name": "Black Tea", "category": "Powder and Mix", "unit": "g", "stock": 2000, "minStock": 200, "costPerUnit": 0.2, "supplier": "" },
+    "ing008": { "name": "Taro Powder", "category": "Powder and Mix", "unit": "g", "stock": 1000, "minStock": 100, "costPerUnit": 0.3, "supplier": "" },
+    "ing009": { "name": "Dalgona Mix", "category": "Powder and Mix", "unit": "g", "stock": 1000, "minStock": 100, "costPerUnit": 0.25, "supplier": "" },
+    "ing010": { "name": "Chocolate Powder", "category": "Powder and Mix", "unit": "g", "stock": 1000, "minStock": 100, "costPerUnit": 0.2, "supplier": "" },
+    "ing011": { "name": "Matcha Powder", "category": "Powder and Mix", "unit": "g", "stock": 1000, "minStock": 100, "costPerUnit": 0.4, "supplier": "" },
+    "ing012": { "name": "Caramel Syrup", "category": "Syrups and Sauces", "unit": "ml", "stock": 2000, "minStock": 200, "costPerUnit": 0.1, "supplier": "" },
+    "ing013": { "name": "Vanilla Syrup", "category": "Syrups and Sauces", "unit": "ml", "stock": 2000, "minStock": 200, "costPerUnit": 0.1, "supplier": "" },
+    "ing014": { "name": "Chocolate Syrup", "category": "Syrups and Sauces", "unit": "ml", "stock": 2000, "minStock": 200, "costPerUnit": 0.1, "supplier": "" },
+    "ing015": { "name": "Strawberry Syrup", "category": "Syrups and Sauces", "unit": "ml", "stock": 2000, "minStock": 200, "costPerUnit": 0.1, "supplier": "" },
+    "ing016": { "name": "Mango Syrup", "category": "Syrups and Sauces", "unit": "ml", "stock": 2000, "minStock": 200, "costPerUnit": 0.1, "supplier": "" },
+    "ing017": { "name": "Blueberry Syrup", "category": "Syrups and Sauces", "unit": "ml", "stock": 2000, "minStock": 200, "costPerUnit": 0.1, "supplier": "" },
+    "ing018": { "name": "Peach Syrup", "category": "Syrups and Sauces", "unit": "ml", "stock": 2000, "minStock": 200, "costPerUnit": 0.1, "supplier": "" },
+    "ing019": { "name": "Okinawa Syrup", "category": "Syrups and Sauces", "unit": "ml", "stock": 2000, "minStock": 200, "costPerUnit": 0.12, "supplier": "" },
+    "ing020": { "name": "Sugar Syrup", "category": "Syrups and Sauces", "unit": "ml", "stock": 3000, "minStock": 300, "costPerUnit": 0.05, "supplier": "" },
+    "ing021": { "name": "Sweet and Sour Sauce", "category": "Syrups and Sauces", "unit": "ml", "stock": 1000, "minStock": 100, "costPerUnit": 0.1, "supplier": "" },
+    "ing022": { "name": "Ice", "category": "Other", "unit": "pcs", "stock": 500, "minStock": 50, "costPerUnit": 0.5, "supplier": "" },
+    "ing023": { "name": "Tapioca Pearls", "category": "Food Ingredients", "unit": "g", "stock": 2000, "minStock": 200, "costPerUnit": 0.15, "supplier": "" },
+    "ing024": { "name": "Oreo Crumbs", "category": "Food Ingredients", "unit": "g", "stock": 1000, "minStock": 100, "costPerUnit": 0.2, "supplier": "" },
+    "ing025": { "name": "Oreo Cookies", "category": "Food Ingredients", "unit": "pcs", "stock": 200, "minStock": 20, "costPerUnit": 3, "supplier": "" },
+    "ing026": { "name": "Potato Fries", "category": "Food Ingredients", "unit": "g", "stock": 5000, "minStock": 500, "costPerUnit": 0.15, "supplier": "" },
+    "ing027": { "name": "Cheese Powder", "category": "Food Ingredients", "unit": "g", "stock": 1000, "minStock": 100, "costPerUnit": 0.3, "supplier": "" },
+    "ing028": { "name": "Salt", "category": "Food Ingredients", "unit": "g", "stock": 1000, "minStock": 100, "costPerUnit": 0.01, "supplier": "" },
+    "ing029": { "name": "Rice", "category": "Food Ingredients", "unit": "g", "stock": 10000, "minStock": 1000, "costPerUnit": 0.05, "supplier": "" },
+    "ing030": { "name": "Shanghai Lumpia", "category": "Food Ingredients", "unit": "pcs", "stock": 200, "minStock": 20, "costPerUnit": 5, "supplier": "" },
+    "ing031": { "name": "Siomai", "category": "Food Ingredients", "unit": "pcs", "stock": 200, "minStock": 20, "costPerUnit": 4, "supplier": "" },
+    "ing032": { "name": "Soda Water", "category": "Other", "unit": "ml", "stock": 10000, "minStock": 1000, "costPerUnit": 0.05, "supplier": "" }
+  },
+  "products": {
+    "prod001": {
+      "name": "Spanish Latte", "category": "Coffee and Milk Tea", "price": 35, "stock": 100, "description": "Rich espresso with condensed milk and fresh milk", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing001", "ingredientName": "Espresso Shot", "quantity": 2, "unit": "pcs", "note": "" },
+        "r2": { "ingredientId": "ing005", "ingredientName": "Condensed Milk", "quantity": 30, "unit": "ml", "note": "" },
+        "r3": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 150, "unit": "ml", "note": "" },
+        "r4": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod002": {
+      "name": "Caramel Macchiato", "category": "Coffee and Milk Tea", "price": 35, "stock": 100, "description": "Espresso with caramel syrup and fresh milk", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing001", "ingredientName": "Espresso Shot", "quantity": 2, "unit": "pcs", "note": "" },
+        "r2": { "ingredientId": "ing012", "ingredientName": "Caramel Syrup", "quantity": 30, "unit": "ml", "note": "" },
+        "r3": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 150, "unit": "ml", "note": "" },
+        "r4": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod003": {
+      "name": "Oreo Latte", "category": "Coffee and Milk Tea", "price": 40, "stock": 100, "description": "Espresso with Oreo crumbs and fresh milk", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing001", "ingredientName": "Espresso Shot", "quantity": 2, "unit": "pcs", "note": "" },
+        "r2": { "ingredientId": "ing024", "ingredientName": "Oreo Crumbs", "quantity": 20, "unit": "g", "note": "" },
+        "r3": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 150, "unit": "ml", "note": "" },
+        "r4": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod004": {
+      "name": "Strawberry Espresso Fusion", "category": "Coffee and Milk Tea", "price": 40, "stock": 100, "description": "Espresso with strawberry syrup and fresh milk", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing001", "ingredientName": "Espresso Shot", "quantity": 2, "unit": "pcs", "note": "" },
+        "r2": { "ingredientId": "ing015", "ingredientName": "Strawberry Syrup", "quantity": 30, "unit": "ml", "note": "" },
+        "r3": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 150, "unit": "ml", "note": "" },
+        "r4": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod005": {
+      "name": "Chocolate Cloud Milk Tea", "category": "Coffee and Milk Tea", "price": 20, "stock": 100, "description": "Chocolate milk tea with tapioca pearls", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing007", "ingredientName": "Black Tea", "quantity": 10, "unit": "g", "note": "" },
+        "r2": { "ingredientId": "ing010", "ingredientName": "Chocolate Powder", "quantity": 20, "unit": "g", "note": "" },
+        "r3": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 150, "unit": "ml", "note": "" },
+        "r4": { "ingredientId": "ing023", "ingredientName": "Tapioca Pearls", "quantity": 30, "unit": "g", "note": "" },
+        "r5": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod006": {
+      "name": "Okinawa Milk Tea", "category": "Coffee and Milk Tea", "price": 20, "stock": 100, "description": "Brown sugar milk tea with tapioca pearls", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing007", "ingredientName": "Black Tea", "quantity": 10, "unit": "g", "note": "" },
+        "r2": { "ingredientId": "ing019", "ingredientName": "Okinawa Syrup", "quantity": 30, "unit": "ml", "note": "" },
+        "r3": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 150, "unit": "ml", "note": "" },
+        "r4": { "ingredientId": "ing023", "ingredientName": "Tapioca Pearls", "quantity": 30, "unit": "g", "note": "" },
+        "r5": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod007": {
+      "name": "Taro Milk Tea", "category": "Coffee and Milk Tea", "price": 20, "stock": 100, "description": "Creamy taro milk tea with tapioca pearls", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing007", "ingredientName": "Black Tea", "quantity": 10, "unit": "g", "note": "" },
+        "r2": { "ingredientId": "ing008", "ingredientName": "Taro Powder", "quantity": 20, "unit": "g", "note": "" },
+        "r3": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 150, "unit": "ml", "note": "" },
+        "r4": { "ingredientId": "ing023", "ingredientName": "Tapioca Pearls", "quantity": 30, "unit": "g", "note": "" },
+        "r5": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod008": {
+      "name": "Dalgona Milk Tea", "category": "Coffee and Milk Tea", "price": 20, "stock": 100, "description": "Dalgona topped milk tea with tapioca pearls", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing007", "ingredientName": "Black Tea", "quantity": 10, "unit": "g", "note": "" },
+        "r2": { "ingredientId": "ing009", "ingredientName": "Dalgona Mix", "quantity": 20, "unit": "g", "note": "" },
+        "r3": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 150, "unit": "ml", "note": "" },
+        "r4": { "ingredientId": "ing023", "ingredientName": "Tapioca Pearls", "quantity": 30, "unit": "g", "note": "" },
+        "r5": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod009": {
+      "name": "Mango Fruity Soda", "category": "Soda and Milk", "price": 19, "stock": 100, "description": "Refreshing mango flavored soda", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing016", "ingredientName": "Mango Syrup", "quantity": 40, "unit": "ml", "note": "" },
+        "r2": { "ingredientId": "ing032", "ingredientName": "Soda Water", "quantity": 200, "unit": "ml", "note": "" },
+        "r3": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod010": {
+      "name": "Blueberry Fruity Soda", "category": "Soda and Milk", "price": 19, "stock": 100, "description": "Refreshing blueberry flavored soda", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing017", "ingredientName": "Blueberry Syrup", "quantity": 40, "unit": "ml", "note": "" },
+        "r2": { "ingredientId": "ing032", "ingredientName": "Soda Water", "quantity": 200, "unit": "ml", "note": "" },
+        "r3": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod011": {
+      "name": "Strawberry Fruity Soda", "category": "Soda and Milk", "price": 19, "stock": 100, "description": "Refreshing strawberry flavored soda", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing015", "ingredientName": "Strawberry Syrup", "quantity": 40, "unit": "ml", "note": "" },
+        "r2": { "ingredientId": "ing032", "ingredientName": "Soda Water", "quantity": 200, "unit": "ml", "note": "" },
+        "r3": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod012": {
+      "name": "Peach Fruity Soda", "category": "Soda and Milk", "price": 19, "stock": 100, "description": "Refreshing peach flavored soda", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing018", "ingredientName": "Peach Syrup", "quantity": 40, "unit": "ml", "note": "" },
+        "r2": { "ingredientId": "ing032", "ingredientName": "Soda Water", "quantity": 200, "unit": "ml", "note": "" },
+        "r3": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod013": {
+      "name": "Oreo Fresh Milk", "category": "Soda and Milk", "price": 35, "stock": 100, "description": "Fresh milk with Oreo crumbs", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing024", "ingredientName": "Oreo Crumbs", "quantity": 30, "unit": "g", "note": "" },
+        "r2": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 200, "unit": "ml", "note": "" },
+        "r3": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod014": {
+      "name": "Strawberry Ice Milk", "category": "Soda and Milk", "price": 35, "stock": 100, "description": "Fresh milk with strawberry syrup", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing015", "ingredientName": "Strawberry Syrup", "quantity": 40, "unit": "ml", "note": "" },
+        "r2": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 200, "unit": "ml", "note": "" },
+        "r3": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod015": {
+      "name": "Chocolate Matcha", "category": "Matcha", "price": 35, "stock": 100, "description": "Matcha with chocolate syrup and fresh milk", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing011", "ingredientName": "Matcha Powder", "quantity": 15, "unit": "g", "note": "" },
+        "r2": { "ingredientId": "ing014", "ingredientName": "Chocolate Syrup", "quantity": 30, "unit": "ml", "note": "" },
+        "r3": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 150, "unit": "ml", "note": "" },
+        "r4": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod016": {
+      "name": "Milky Matcha", "category": "Matcha", "price": 35, "stock": 100, "description": "Creamy matcha with condensed milk", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing011", "ingredientName": "Matcha Powder", "quantity": 15, "unit": "g", "note": "" },
+        "r2": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 150, "unit": "ml", "note": "" },
+        "r3": { "ingredientId": "ing005", "ingredientName": "Condensed Milk", "quantity": 20, "unit": "ml", "note": "" },
+        "r4": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod017": {
+      "name": "Matcha Shot", "category": "Matcha", "price": 35, "stock": 100, "description": "Matcha with espresso shot and fresh milk", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing011", "ingredientName": "Matcha Powder", "quantity": 15, "unit": "g", "note": "" },
+        "r2": { "ingredientId": "ing001", "ingredientName": "Espresso Shot", "quantity": 1, "unit": "pcs", "note": "" },
+        "r3": { "ingredientId": "ing003", "ingredientName": "Fresh Milk", "quantity": 150, "unit": "ml", "note": "" },
+        "r4": { "ingredientId": "ing022", "ingredientName": "Ice", "quantity": 1, "unit": "pcs", "note": "" }
+      }
+    },
+    "prod018": {
+      "name": "Classic Fries Cheese", "category": "Snack and Rice Meal", "price": 30, "stock": 100, "description": "Crispy fries with cheese powder", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing026", "ingredientName": "Potato Fries", "quantity": 150, "unit": "g", "note": "" },
+        "r2": { "ingredientId": "ing027", "ingredientName": "Cheese Powder", "quantity": 10, "unit": "g", "note": "" }
+      }
+    },
+    "prod019": {
+      "name": "Classic Fries Salt", "category": "Snack and Rice Meal", "price": 30, "stock": 100, "description": "Crispy fries with salt", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing026", "ingredientName": "Potato Fries", "quantity": 150, "unit": "g", "note": "" },
+        "r2": { "ingredientId": "ing028", "ingredientName": "Salt", "quantity": 5, "unit": "g", "note": "" }
+      }
+    },
+    "prod020": {
+      "name": "Shanghai Rice", "category": "Snack and Rice Meal", "price": 35, "stock": 100, "description": "Rice with shanghai lumpia and sweet and sour sauce", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing029", "ingredientName": "Rice", "quantity": 200, "unit": "g", "note": "" },
+        "r2": { "ingredientId": "ing030", "ingredientName": "Shanghai Lumpia", "quantity": 3, "unit": "pcs", "note": "" },
+        "r3": { "ingredientId": "ing021", "ingredientName": "Sweet and Sour Sauce", "quantity": 30, "unit": "ml", "note": "" }
+      }
+    },
+    "prod021": {
+      "name": "Siomai Rice", "category": "Snack and Rice Meal", "price": 35, "stock": 100, "description": "Rice with siomai and sweet and sour sauce", "photoUrl": "",
+      "recipe": {
+        "r1": { "ingredientId": "ing029", "ingredientName": "Rice", "quantity": 200, "unit": "g", "note": "" },
+        "r2": { "ingredientId": "ing031", "ingredientName": "Siomai", "quantity": 3, "unit": "pcs", "note": "" },
+        "r3": { "ingredientId": "ing021", "ingredientName": "Sweet and Sour Sauce", "quantity": 30, "unit": "ml", "note": "" }
+      }
     }
   }
 }

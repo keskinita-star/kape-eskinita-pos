@@ -27,6 +27,13 @@ export default function ProductsManagement() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [saving, setSaving] = useState(false);
 
+  // Edit modal state
+  const [editModal, setEditModal] = useState(false);
+  const [editData, setEditData] = useState({ name: "", description: "", photoUrl: "" });
+  const [editId, setEditId] = useState(null);
+  const [editPreview, setEditPreview] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
   const load = () => getProducts().then(p => { setProducts(p); setLoading(false); });
   useEffect(() => { load(); }, []);
 
@@ -80,13 +87,8 @@ export default function ProductsManagement() {
       ),
     };
     try {
-      if (editing) {
-        await updateProduct(editing, data);
-        toast.success("Product updated!");
-      } else {
-        await addProduct(data);
-        toast.success("Product added!");
-      }
+      await addProduct(data);
+      toast.success("Product added!");
       setForm(empty); setEditing(null); setShowForm(false); setPhotoPreview("");
       load();
     } catch (err) {
@@ -96,22 +98,42 @@ export default function ProductsManagement() {
     }
   };
 
+  // Open edit modal
   const handleEdit = (p) => {
-    setForm({
-      name: p.name,
-      price: p.hasSizes ? "" : p.price,
-      category: p.category,
-      stock: p.stock,
+    setEditId(p.id);
+    setEditData({
+      name: p.name || "",
       description: p.description || "",
-      ingredients: p.ingredients?.length ? p.ingredients : [{ name: "", quantity: "", unit: "g", cost: "" }],
       photoUrl: p.photoUrl || "",
-      hasSizes: p.hasSizes || false,
-      sizes: p.sizes?.length ? p.sizes.map(s => ({ label: s.label, price: s.price })) : [{ label: "Tall", price: "" }],
     });
-    setEditing(p.id);
-    setPhotoPreview(p.photoUrl || "");
-    setShowForm(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setEditPreview(p.photoUrl || "");
+    setEditModal(true);
+  };
+
+  // Save edit modal
+  const handleEditSave = async () => {
+    if (!editData.name.trim()) {
+      toast.error("Product name is required.");
+      return;
+    }
+    setEditSaving(true);
+    try {
+      // Fetch existing product data to merge with
+      const existing = products.find(p => p.id === editId);
+      await updateProduct(editId, {
+        ...existing,
+        name: editData.name,
+        description: editData.description,
+        photoUrl: editData.photoUrl,
+      });
+      toast.success("Product updated!");
+      setEditModal(false);
+      load();
+    } catch (err) {
+      toast.error("Failed to update: " + err.message);
+    } finally {
+      setEditSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -126,6 +148,7 @@ export default function ProductsManagement() {
     border: "1px solid #e8e2d9", borderRadius: 8,
     fontSize: 13, background: "#fdfcfb", outline: "none",
     color: "#1a1814", fontFamily: "inherit",
+    boxSizing: "border-box",
   };
   const labelStyle = {
     fontSize: 11, fontWeight: 600, color: "#9a9690",
@@ -135,6 +158,143 @@ export default function ProductsManagement() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 900, margin: "0 auto" }}>
+
+      {/* Edit Modal */}
+      {editModal && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setEditModal(false); }}
+          style={{
+            position: "fixed", inset: 0, zIndex: 1000,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: 16,
+          }}>
+          <div style={{
+            background: "#fff", borderRadius: 16, width: "100%", maxWidth: 480,
+            boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+            overflow: "hidden",
+            animation: "slideUp 0.2s ease",
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: "18px 24px", borderBottom: "1px solid #f0ede8",
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              background: "#fdfcfb",
+            }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1814" }}>Edit Product</div>
+              <button
+                onClick={() => setEditModal(false)}
+                style={{
+                  width: 30, height: 30, borderRadius: "50%", border: "1px solid #e8e2d9",
+                  background: "#f5f3ee", cursor: "pointer", fontSize: 16, color: "#6b6860",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                ×
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
+
+              {/* Photo URL + Preview */}
+              <div>
+                <label style={labelStyle}>Photo URL</label>
+                <input
+                  style={inputStyle}
+                  value={editData.photoUrl}
+                  onChange={e => {
+                    setEditData(d => ({ ...d, photoUrl: e.target.value }));
+                    setEditPreview(e.target.value);
+                  }}
+                  placeholder="https://res.cloudinary.com/..."
+                />
+                {editPreview && (
+                  <div style={{
+                    marginTop: 10, width: "100%", height: 160, borderRadius: 10,
+                    border: "1px solid #e8e2d9", overflow: "hidden", background: "#f5f3ee",
+                  }}>
+                    <img
+                      src={editPreview}
+                      alt="preview"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={() => setEditPreview("")}
+                    />
+                  </div>
+                )}
+                {!editPreview && (
+                  <div style={{
+                    marginTop: 10, width: "100%", height: 100, borderRadius: 10,
+                    border: "1px dashed #e8e2d9", background: "#fdfcfb",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexDirection: "column", gap: 4,
+                  }}>
+                    <span style={{ fontSize: 24 }}>🖼️</span>
+                    <span style={{ fontSize: 11, color: "#b5b1aa" }}>Paste a URL above to preview</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Product Name */}
+              <div>
+                <label style={labelStyle}>Product Name</label>
+                <input
+                  style={inputStyle}
+                  value={editData.name}
+                  onChange={e => setEditData(d => ({ ...d, name: e.target.value }))}
+                  placeholder="e.g. Spanish Latte"
+                  required
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label style={labelStyle}>Description</label>
+                <textarea
+                  style={{ ...inputStyle, resize: "none", height: 80 }}
+                  value={editData.description}
+                  onChange={e => setEditData(d => ({ ...d, description: e.target.value }))}
+                  placeholder="Short description of the product..."
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: "14px 24px", borderTop: "1px solid #f0ede8",
+              display: "flex", gap: 10, justifyContent: "flex-end",
+              background: "#fdfcfb",
+            }}>
+              <button
+                onClick={() => setEditModal(false)}
+                style={{
+                  padding: "9px 18px", borderRadius: 10, background: "none",
+                  border: "1px solid #e8e2d9", fontSize: 13, color: "#6b6860", cursor: "pointer",
+                }}>
+                Cancel
+              </button>
+              <button
+                onClick={handleEditSave}
+                disabled={editSaving}
+                style={{
+                  padding: "9px 22px", borderRadius: 10,
+                  background: editSaving ? "#d0ccc4" : "#1a1814",
+                  color: editSaving ? "#9a9690" : "#fff",
+                  border: "none", fontSize: 13, fontWeight: 600,
+                  cursor: editSaving ? "not-allowed" : "pointer",
+                }}>
+                {editSaving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
 
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -149,19 +309,15 @@ export default function ProductsManagement() {
         </button>
       </div>
 
-      {/* Form */}
+      {/* Add Product Form (unchanged) */}
       {showForm && (
         <form onSubmit={handleSubmit} style={{ background: "#fff", border: "1px solid #e8e2d9", borderRadius: 16, overflow: "hidden" }}>
           <div style={{ padding: "18px 24px", borderBottom: "1px solid #f0ede8", background: "#fdfcfb" }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1814" }}>{editing ? "Edit Product" : "New Product"}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1814" }}>New Product</div>
           </div>
 
           <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 24 }}>
-
-            {/* Photo + Basic Info */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-
-              {/* Photo URL */}
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <div>
                   <label style={labelStyle}>Photo URL</label>
@@ -190,7 +346,6 @@ export default function ProductsManagement() {
                 )}
               </div>
 
-              {/* Basic Info */}
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div>
                   <label style={labelStyle}>Product name</label>
@@ -213,7 +368,6 @@ export default function ProductsManagement() {
                   <textarea style={{ ...inputStyle, resize: "none", height: 72 }} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Short description..." />
                 </div>
 
-                {/* Sizes toggle */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 10, border: "1px solid #e8e2d9", background: "#fdfcfb" }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1814" }}>Multiple sizes</div>
@@ -225,7 +379,6 @@ export default function ProductsManagement() {
                   </button>
                 </div>
 
-                {/* Single price (no sizes) */}
                 {!form.hasSizes && (
                   <div>
                     <label style={labelStyle}>Price (₱)</label>
@@ -235,7 +388,6 @@ export default function ProductsManagement() {
               </div>
             </div>
 
-            {/* Sizes */}
             {form.hasSizes && (
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -245,18 +397,14 @@ export default function ProductsManagement() {
                     + Add size
                   </button>
                 </div>
-
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {/* Header */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 32px", gap: 8 }}>
                     {["Size", "Price (₱)", ""].map(h => (
                       <div key={h} style={{ fontSize: 10, fontWeight: 600, color: "#9a9690", textTransform: "uppercase", letterSpacing: "0.5px" }}>{h}</div>
                     ))}
                   </div>
-
                   {form.sizes.map((size, i) => (
                     <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 32px", gap: 8, alignItems: "center" }}>
-                      {/* Size label with presets */}
                       <div style={{ display: "flex", gap: 4 }}>
                         {SIZE_PRESETS.map(p => (
                           <button key={p} type="button" onClick={() => updateSize(i, "label", p)}
@@ -264,12 +412,7 @@ export default function ProductsManagement() {
                             {p}
                           </button>
                         ))}
-                        <input
-                          style={{ ...inputStyle, flex: 1, minWidth: 0 }}
-                          value={size.label}
-                          onChange={e => updateSize(i, "label", e.target.value)}
-                          placeholder="Custom"
-                        />
+                        <input style={{ ...inputStyle, flex: 1, minWidth: 0 }} value={size.label} onChange={e => updateSize(i, "label", e.target.value)} placeholder="Custom" />
                       </div>
                       <input style={inputStyle} type="number" min="0" value={size.price} onChange={e => updateSize(i, "price", e.target.value)} placeholder="0.00" />
                       <button type="button" onClick={() => removeSize(i)} disabled={form.sizes.length === 1}
@@ -279,21 +422,9 @@ export default function ProductsManagement() {
                     </div>
                   ))}
                 </div>
-
-                {/* Size price summary */}
-                {form.sizes.some(s => s.label && s.price) && (
-                  <div style={{ marginTop: 10, padding: "10px 14px", background: "#f5f3ee", borderRadius: 10, display: "flex", gap: 12, flexWrap: "wrap", fontSize: 12 }}>
-                    {form.sizes.filter(s => s.label && s.price).map((s, i) => (
-                      <span key={i} style={{ color: "#6b6860" }}>
-                        {s.label}: <strong style={{ color: "#1a1814" }}>{formatCurrency(Number(s.price))}</strong>
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
 
-            {/* Ingredients */}
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div>
@@ -307,7 +438,6 @@ export default function ProductsManagement() {
                   + Add ingredient
                 </button>
               </div>
-
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px 90px 32px", gap: 8 }}>
                   {["Ingredient", "Qty", "Unit", "Cost (₱)", ""].map(h => (
@@ -329,25 +459,12 @@ export default function ProductsManagement() {
                   </div>
                 ))}
               </div>
-
-              {totalIngredientCost > 0 && effectivePrice > 0 && (
-                <div style={{ marginTop: 12, padding: "10px 14px", background: "#f5f3ee", borderRadius: 10, display: "flex", gap: 20, fontSize: 12 }}>
-                  <span style={{ color: "#6b6860" }}>Cost: <strong style={{ color: "#1a1814" }}>{formatCurrency(totalIngredientCost)}</strong></span>
-                  <span style={{ color: "#6b6860" }}>
-                    {form.hasSizes ? "Starting price" : "Price"}: <strong style={{ color: "#1a1814" }}>{formatCurrency(effectivePrice)}</strong>
-                  </span>
-                  <span style={{ color: "#6b6860" }}>Margin: <strong style={{ color: effectivePrice - totalIngredientCost > 0 ? "#166534" : "#dc2626" }}>
-                    {formatCurrency(effectivePrice - totalIngredientCost)} ({effectivePrice > 0 ? Math.round(((effectivePrice - totalIngredientCost) / effectivePrice) * 100) : 0}%)
-                  </strong></span>
-                </div>
-              )}
             </div>
 
-            {/* Submit */}
             <div style={{ display: "flex", gap: 10 }}>
               <button type="submit" disabled={saving}
                 style={{ padding: "10px 24px", borderRadius: 10, background: saving ? "#d0ccc4" : "#1a1814", color: saving ? "#9a9690" : "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer" }}>
-                {saving ? "Saving..." : editing ? "Save Changes" : "Add Product"}
+                {saving ? "Saving..." : "Add Product"}
               </button>
               <button type="button" onClick={() => setShowForm(false)}
                 style={{ padding: "10px 18px", borderRadius: 10, background: "none", border: "1px solid #e8e2d9", fontSize: 13, color: "#6b6860", cursor: "pointer" }}>
@@ -387,12 +504,9 @@ export default function ProductsManagement() {
                       : formatCurrency(p.price)}
                   </div>
                 </div>
-
                 {p.description && (
                   <div style={{ fontSize: 11, color: "#9a9690", marginBottom: 8, lineHeight: 1.4 }}>{p.description}</div>
                 )}
-
-                {/* Sizes pill row */}
                 {p.hasSizes && p.sizes?.length > 0 && (
                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
                     {p.sizes.map((s, i) => (
@@ -402,14 +516,12 @@ export default function ProductsManagement() {
                     ))}
                   </div>
                 )}
-
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                   <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "#f5f3ee", color: "#6b6860" }}>{p.category}</span>
                   <span style={{ fontSize: 11, fontWeight: 500, color: p.stock <= 0 ? "#dc2626" : p.stock <= LOW_STOCK_THRESHOLD ? "#b45309" : "#166534" }}>
                     {p.stock <= 0 ? "Out of stock" : `${p.stock} in stock`}
                   </span>
                 </div>
-
                 {p.ingredients?.length > 0 && (
                   <div style={{ fontSize: 10, color: "#9a9690", marginBottom: 10, lineHeight: 1.6, borderTop: "1px solid #f0ede8", paddingTop: 8 }}>
                     {p.ingredients.map((ing, i) => (
@@ -417,7 +529,6 @@ export default function ProductsManagement() {
                     ))}
                   </div>
                 )}
-
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => handleEdit(p)}
                     style={{ flex: 1, padding: "6px", borderRadius: 8, border: "1px solid #e8e2d9", background: "none", fontSize: 12, color: "#1a1814", cursor: "pointer", fontWeight: 500 }}>

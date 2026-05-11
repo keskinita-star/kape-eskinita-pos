@@ -3,13 +3,13 @@ import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAf11niFcK0doWD1RAkzJvTA8pl0-FRcXM",
-  authDomain: "kape-eskinita-pos.firebaseapp.com",
-  databaseURL: "https://kape-eskinita-pos-default-rtdb.firebaseio.com",
-  projectId: "kape-eskinita-pos",
-  storageBucket: "kape-eskinita-pos.firebasestorage.app",
-  messagingSenderId: "26132154466",
-  appId: "1:26132154466:web:6d8472984ca1159bf7293b"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
