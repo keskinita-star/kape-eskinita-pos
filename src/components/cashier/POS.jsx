@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { getProducts, checkProductAvailability } from "../../services/productService";
 import { placeOrder, getOrders, updateOrderStatus } from "../../services/orderService";
+import { updateCustomerOrderStatus } from "../../services/customerOrderService";
 import { logAction } from "../../services/auditService";
 import { useAuth } from "../../contexts/AuthContext";
+import { ref, get } from "firebase/database";
+import { rtdb } from "../../services/firebase";
 import { TAX_RATE, LOW_STOCK_THRESHOLD, CATEGORIES, NO_SIZE_CATEGORIES } from "../../utils/constants";
 import { formatCurrency } from "../../utils/formatters";
 import PaymentModal from "./PaymentModal";
@@ -10,12 +13,13 @@ import ReceiptModal from "./ReceiptModal";
 import SizeModal from "./SizeModal";
 import toast from "react-hot-toast";
 
-const STATUS_FLOW = { Pending: "Preparing", Preparing: "Ready", Ready: "Completed" };
+const STATUS_FLOW = { ordered: "preparing", preparing: "ready", ready: "completed" };
+const STATUS_LABEL = { ordered: "Ordered", preparing: "Preparing", ready: "Ready", completed: "Completed" };
 const STATUS_STYLE = {
-  Pending:   { background: "#dbeafe", color: "#1e40af" },
-  Preparing: { background: "#fef3c7", color: "#92400e" },
-  Ready:     { background: "#d1fae5", color: "#065f46" },
-  Completed: { background: "#f3f4f6", color: "#6b7280" },
+  ordered:    { background: "#dbeafe", color: "#1e40af" },
+  preparing:  { background: "#fef3c7", color: "#92400e" },
+  ready:      { background: "#d1fae5", color: "#065f46" },
+  completed:  { background: "#f3f4f6", color: "#6b7280" },
 };
 
 export default function POS() {
@@ -44,10 +48,12 @@ export default function POS() {
   const loadOrders = async () => {
     setOrdersLoading(true);
     try {
-      const all = await getOrders();
+      const snap = await get(ref(rtdb, "customerOrders"));
+      if (!snap.exists()) { setCustomerOrders([]); setOrdersLoading(false); return; }
+      const all = Object.entries(snap.val()).map(([id, val]) => ({ id, ...val }));
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const queue = all
-        .filter(o => o.createdAt >= today.getTime() && o.status !== "Completed")
+        .filter(o => o.createdAt >= today.getTime() && o.status !== "completed")
         .sort((a, b) => b.createdAt - a.createdAt);
       setCustomerOrders(queue);
     } catch {
@@ -64,15 +70,15 @@ export default function POS() {
     return () => clearInterval(interval);
   }, []);
 
-  const pendingCount = customerOrders.filter(o => o.status === "Pending").length;
+  const pendingCount = customerOrders.filter(o => o.status === "ordered").length;
 
   const handleAdvanceStatus = async (order) => {
     const next = STATUS_FLOW[order.status];
     if (!next) return;
     try {
-      await updateOrderStatus(order.id, next);
+      await updateCustomerOrderStatus(order.id, next);
       await logAction(user.uid, user.name, "UPDATE_ORDER_STATUS", `Order ${order.id} → ${next}`);
-      toast.success(`Order marked as ${next}`);
+      toast.success(`Order marked as ${STATUS_LABEL[next]}`);
       loadOrders();
       if (selectedOrder?.id === order.id) setSelectedOrder({ ...order, status: next });
     } catch {
@@ -195,7 +201,7 @@ export default function POS() {
           ? <p style={{ color: "#b5b1aa", fontSize: 13, textAlign: "center", marginTop: 40, lineHeight: 1.6 }}>No active customer orders.<br />Online orders will appear here.</p>
           : customerOrders.map(order => {
             const isSelected = selectedOrder?.id === order.id;
-            const st = STATUS_STYLE[order.status] || STATUS_STYLE.Pending;
+            const st = STATUS_STYLE[order.status] || STATUS_STYLE.ordered;
             const nextStatus = STATUS_FLOW[order.status];
             return (
               <div key={order.id}
@@ -206,7 +212,7 @@ export default function POS() {
                     <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1814" }}>#{String(order.id).slice(-5).toUpperCase()}</span>
                     <span style={{ fontSize: 11, color: "#9a9690", marginLeft: 6 }}>{order.customerName || "Customer"}</span>
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, ...st }}>{order.status}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, ...st }}>{STATUS_LABEL[order.status] || order.status}</span>
                 </div>
                 <div style={{ fontSize: 11, color: "#6b6860", marginBottom: 4 }}>
                   {(order.items || []).map(i => `${i.name} x${i.qty}`).join(" · ")}
@@ -229,7 +235,7 @@ export default function POS() {
                     {nextStatus && (
                       <button onClick={(e) => { e.stopPropagation(); handleAdvanceStatus(order); }}
                         style={{ width: "100%", padding: "8px", borderRadius: 8, background: "#1a1814", color: "#fff", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                        Mark as {nextStatus} →
+                        Mark as {STATUS_LABEL[nextStatus]} →
                       </button>
                     )}
                     {!nextStatus && <div style={{ textAlign: "center", fontSize: 12, color: "#6db87a", fontWeight: 600 }}>✅ Completed</div>}
