@@ -10,12 +10,10 @@ import InventoryManagement from "./InventoryManagement";
 
 const NAV = [
   { key: "overview",  label: "Overview",      icon: "📊" },
-  { key: "products",  label: "Products",      icon: "📦" },
   { key: "orders",    label: "Orders",        icon: "🧾" },
   { key: "inventory", label: "Inventory",     icon: "🗃️" },
   { key: "sales",     label: "Sales Report",  icon: "📈" },
   { key: "users",     label: "Users",         icon: "👥" },
-  { key: "customer",  label: "Customer App",  icon: "📱" }, // new
 ];
 
 class PageErrorBoundary extends Component {
@@ -40,12 +38,10 @@ class PageErrorBoundary extends Component {
 function ActivePage({ page }) {
   switch (page) {
     case "overview":  return <Overview />;
-    case "products":  return <ProductsManagement />;
     case "orders":    return <OrdersManagement />;
     case "inventory": return <InventoryManagement />;
     case "sales":     return <SalesReport />;
     case "users":     return <UsersManagement />;
-    case "customer":  return <CustomerAppView />;
     default:          return <Overview />;
   }
 }

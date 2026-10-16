@@ -1,24 +1,95 @@
 import { useState, useEffect } from "react";
 import { getProducts, addProduct, updateProduct, deleteProduct } from "../../services/productService";
+import { getMaterials } from "../../services/materialService";
 import { formatCurrency } from "../../utils/formatters";
 import { LOW_STOCK_THRESHOLD } from "../../utils/constants";
 import toast from "react-hot-toast";
 
 const CATEGORIES = ["Espresso", "Cold Drinks", "Non-Coffee", "Food"];
-const UNITS = ["g", "kg", "ml", "L", "pcs", "tbsp", "tsp", "oz"];
 const SIZE_PRESETS = ["Tall", "Grande", "Venti"];
+
+const emptyMaterial = { materialId: "", qty: 1 };
 
 const empty = {
   name: "", price: "", category: "Espresso", stock: "",
   description: "",
-  ingredients: [{ name: "", quantity: "", unit: "g", cost: "" }],
+  materials: [{ ...emptyMaterial }],
   photoUrl: "",
   hasSizes: false,
   sizes: [{ label: "Tall", price: "" }],
 };
 
+const inputStyle = {
+  width: "100%", padding: "9px 12px",
+  border: "1px solid #e8e2d9", borderRadius: 8,
+  fontSize: 13, background: "#fdfcfb", outline: "none",
+  color: "#1a1814", fontFamily: "inherit",
+  boxSizing: "border-box",
+};
+const labelStyle = {
+  fontSize: 11, fontWeight: 600, color: "#9a9690",
+  display: "block", marginBottom: 5,
+  textTransform: "uppercase", letterSpacing: "0.5px",
+};
+
+// ─── Material row picker ──────────────────────────────────────────────────────
+
+function MaterialRow({ row, allMaterials, onChange, onRemove, canRemove }) {
+  const selected = allMaterials.find(m => m.id === row.materialId);
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 90px 32px", gap: 8, alignItems: "center" }}>
+      <select
+        style={inputStyle}
+        value={row.materialId}
+        onChange={e => onChange("materialId", e.target.value)}
+      >
+        <option value="">— Select material —</option>
+        {allMaterials.map(m => (
+          <option key={m.id} value={m.id}>
+            {m.name} ({m.stock} {m.unit} left)
+          </option>
+        ))}
+      </select>
+      <div style={{ position: "relative" }}>
+        <input
+          style={inputStyle}
+          type="number"
+          min={0.01}
+          step="0.01"
+          value={row.qty}
+          onChange={e => onChange("qty", Number(e.target.value))}
+          placeholder="Qty"
+        />
+        {selected && (
+          <span style={{
+            position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+            fontSize: 10, color: "#9a9690", pointerEvents: "none",
+          }}>
+            {selected.unit}
+          </span>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={!canRemove}
+        style={{
+          width: 32, height: 32, borderRadius: 8,
+          border: "1px solid #fca5a5", background: "none",
+          color: canRemove ? "#dc2626" : "#d0ccc4",
+          fontSize: 16, cursor: canRemove ? "pointer" : "not-allowed",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >×</button>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export default function ProductsManagement() {
   const [products, setProducts] = useState([]);
+  const [allMaterials, setAllMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
@@ -29,36 +100,38 @@ export default function ProductsManagement() {
 
   // Edit modal state
   const [editModal, setEditModal] = useState(false);
-  const [editData, setEditData] = useState({ name: "", description: "", photoUrl: "" });
+  const [editData, setEditData] = useState({ name: "", description: "", photoUrl: "", materials: [{ ...emptyMaterial }] });
   const [editId, setEditId] = useState(null);
   const [editPreview, setEditPreview] = useState("");
   const [editSaving, setEditSaving] = useState(false);
 
   const load = () => getProducts().then(p => { setProducts(p); setLoading(false); });
-  useEffect(() => { load(); }, []);
+  const loadMaterials = () => getMaterials().then(setAllMaterials);
+
+  useEffect(() => { load(); loadMaterials(); }, []);
 
   const filtered = activeCategory === "All" ? products : products.filter(p => p.category === activeCategory);
 
-  const addIngredient = () => setForm(f => ({
-    ...f, ingredients: [...f.ingredients, { name: "", quantity: "", unit: "g", cost: "" }]
-  }));
-  const removeIngredient = (i) => setForm(f => ({
-    ...f, ingredients: f.ingredients.filter((_, idx) => idx !== i)
-  }));
-  const updateIngredient = (i, field, value) => setForm(f => ({
-    ...f, ingredients: f.ingredients.map((ing, idx) => idx === i ? { ...ing, [field]: value } : ing)
+  // ── Form material helpers ─────────────────────────────────────────────────
+  const addMaterialRow = () => setForm(f => ({ ...f, materials: [...f.materials, { ...emptyMaterial }] }));
+  const removeMaterialRow = (i) => setForm(f => ({ ...f, materials: f.materials.filter((_, idx) => idx !== i) }));
+  const updateMaterialRow = (i, field, value) => setForm(f => ({
+    ...f, materials: f.materials.map((m, idx) => idx === i ? { ...m, [field]: value } : m),
   }));
 
+  // ── Edit modal material helpers ───────────────────────────────────────────
+  const addEditMaterialRow = () => setEditData(d => ({ ...d, materials: [...d.materials, { ...emptyMaterial }] }));
+  const removeEditMaterialRow = (i) => setEditData(d => ({ ...d, materials: d.materials.filter((_, idx) => idx !== i) }));
+  const updateEditMaterialRow = (i, field, value) => setEditData(d => ({
+    ...d, materials: d.materials.map((m, idx) => idx === i ? { ...m, [field]: value } : m),
+  }));
+
+  // ── Size helpers ──────────────────────────────────────────────────────────
   const addSize = () => setForm(f => ({ ...f, sizes: [...f.sizes, { label: "", price: "" }] }));
   const removeSize = (i) => setForm(f => ({ ...f, sizes: f.sizes.filter((_, idx) => idx !== i) }));
   const updateSize = (i, field, value) => setForm(f => ({
-    ...f, sizes: f.sizes.map((s, idx) => idx === i ? { ...s, [field]: value } : s)
+    ...f, sizes: f.sizes.map((s, idx) => idx === i ? { ...s, [field]: value } : s),
   }));
-
-  const totalIngredientCost = form.ingredients.reduce((s, i) => s + (Number(i.cost) || 0), 0);
-  const effectivePrice = form.hasSizes
-    ? Math.min(...form.sizes.map(s => Number(s.price) || 0).filter(p => p > 0))
-    : Number(form.price);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,12 +140,13 @@ export default function ProductsManagement() {
       return;
     }
     setSaving(true);
+    const validMaterials = form.materials.filter(m => m.materialId && m.qty > 0);
     const data = {
       name: form.name,
       category: form.category,
       stock: Number(form.stock),
       description: form.description,
-      ingredients: form.ingredients.filter(i => i.name),
+      materials: validMaterials,
       photoUrl: form.photoUrl,
       hasSizes: form.hasSizes,
       ...(form.hasSizes
@@ -98,19 +172,18 @@ export default function ProductsManagement() {
     }
   };
 
-  // Open edit modal
   const handleEdit = (p) => {
     setEditId(p.id);
     setEditData({
       name: p.name || "",
       description: p.description || "",
       photoUrl: p.photoUrl || "",
+      materials: p.materials?.length ? p.materials : [{ ...emptyMaterial }],
     });
     setEditPreview(p.photoUrl || "");
     setEditModal(true);
   };
 
-  // Save edit modal
   const handleEditSave = async () => {
     if (!editData.name.trim()) {
       toast.error("Product name is required.");
@@ -118,13 +191,14 @@ export default function ProductsManagement() {
     }
     setEditSaving(true);
     try {
-      // Fetch existing product data to merge with
       const existing = products.find(p => p.id === editId);
+      const validMaterials = editData.materials.filter(m => m.materialId && m.qty > 0);
       await updateProduct(editId, {
         ...existing,
         name: editData.name,
         description: editData.description,
         photoUrl: editData.photoUrl,
+        materials: validMaterials,
       });
       toast.success("Product updated!");
       setEditModal(false);
@@ -143,23 +217,16 @@ export default function ProductsManagement() {
     load();
   };
 
-  const inputStyle = {
-    width: "100%", padding: "9px 12px",
-    border: "1px solid #e8e2d9", borderRadius: 8,
-    fontSize: 13, background: "#fdfcfb", outline: "none",
-    color: "#1a1814", fontFamily: "inherit",
-    boxSizing: "border-box",
-  };
-  const labelStyle = {
-    fontSize: 11, fontWeight: 600, color: "#9a9690",
-    display: "block", marginBottom: 5,
-    textTransform: "uppercase", letterSpacing: "0.5px",
+  // ── Material label for product card ──────────────────────────────────────
+  const getMaterialLabel = (mat) => {
+    const found = allMaterials.find(m => m.id === mat.materialId);
+    return found ? `${found.name} ×${mat.qty}` : null;
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 900, margin: "0 auto" }}>
 
-      {/* Edit Modal */}
+      {/* ── Edit Modal ──────────────────────────────────────────────────────── */}
       {editModal && (
         <div
           onClick={(e) => { if (e.target === e.currentTarget) setEditModal(false); }}
@@ -171,117 +238,104 @@ export default function ProductsManagement() {
           }}>
           <div style={{
             background: "#fff", borderRadius: 16, width: "100%", maxWidth: 480,
-            boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-            overflow: "hidden",
-            animation: "slideUp 0.2s ease",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.2)", overflow: "hidden",
+            animation: "slideUp 0.2s ease", maxHeight: "90vh", overflowY: "auto",
           }}>
-            {/* Modal Header */}
+            {/* Header */}
             <div style={{
               padding: "18px 24px", borderBottom: "1px solid #f0ede8",
               display: "flex", justifyContent: "space-between", alignItems: "center",
               background: "#fdfcfb",
             }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1814" }}>Edit Product</div>
-              <button
-                onClick={() => setEditModal(false)}
-                style={{
-                  width: 30, height: 30, borderRadius: "50%", border: "1px solid #e8e2d9",
-                  background: "#f5f3ee", cursor: "pointer", fontSize: 16, color: "#6b6860",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
+              <button onClick={() => setEditModal(false)}
+                style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid #e8e2d9", background: "#f5f3ee", cursor: "pointer", fontSize: 16, color: "#6b6860", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 ×
               </button>
             </div>
 
-            {/* Modal Body */}
+            {/* Body */}
             <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 18 }}>
 
-              {/* Photo URL + Preview */}
+              {/* Photo */}
               <div>
                 <label style={labelStyle}>Photo URL</label>
-                <input
-                  style={inputStyle}
-                  value={editData.photoUrl}
-                  onChange={e => {
-                    setEditData(d => ({ ...d, photoUrl: e.target.value }));
-                    setEditPreview(e.target.value);
-                  }}
-                  placeholder="https://res.cloudinary.com/..."
-                />
-                {editPreview && (
-                  <div style={{
-                    marginTop: 10, width: "100%", height: 160, borderRadius: 10,
-                    border: "1px solid #e8e2d9", overflow: "hidden", background: "#f5f3ee",
-                  }}>
-                    <img
-                      src={editPreview}
-                      alt="preview"
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      onError={() => setEditPreview("")}
-                    />
+                <input style={inputStyle} value={editData.photoUrl}
+                  onChange={e => { setEditData(d => ({ ...d, photoUrl: e.target.value })); setEditPreview(e.target.value); }}
+                  placeholder="https://res.cloudinary.com/..." />
+                {editPreview ? (
+                  <div style={{ marginTop: 10, width: "100%", height: 160, borderRadius: 10, border: "1px solid #e8e2d9", overflow: "hidden", background: "#f5f3ee" }}>
+                    <img src={editPreview} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setEditPreview("")} />
                   </div>
-                )}
-                {!editPreview && (
-                  <div style={{
-                    marginTop: 10, width: "100%", height: 100, borderRadius: 10,
-                    border: "1px dashed #e8e2d9", background: "#fdfcfb",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    flexDirection: "column", gap: 4,
-                  }}>
+                ) : (
+                  <div style={{ marginTop: 10, width: "100%", height: 100, borderRadius: 10, border: "1px dashed #e8e2d9", background: "#fdfcfb", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 4 }}>
                     <span style={{ fontSize: 24 }}>🖼️</span>
                     <span style={{ fontSize: 11, color: "#b5b1aa" }}>Paste a URL above to preview</span>
                   </div>
                 )}
               </div>
 
-              {/* Product Name */}
+              {/* Name */}
               <div>
                 <label style={labelStyle}>Product Name</label>
-                <input
-                  style={inputStyle}
-                  value={editData.name}
+                <input style={inputStyle} value={editData.name}
                   onChange={e => setEditData(d => ({ ...d, name: e.target.value }))}
-                  placeholder="e.g. Spanish Latte"
-                  required
-                />
+                  placeholder="e.g. Spanish Latte" required />
               </div>
 
               {/* Description */}
               <div>
                 <label style={labelStyle}>Description</label>
-                <textarea
-                  style={{ ...inputStyle, resize: "none", height: 80 }}
+                <textarea style={{ ...inputStyle, resize: "none", height: 80 }}
                   value={editData.description}
                   onChange={e => setEditData(d => ({ ...d, description: e.target.value }))}
-                  placeholder="Short description of the product..."
-                />
+                  placeholder="Short description of the product..." />
+              </div>
+
+              {/* Materials */}
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <div>
+                    <label style={labelStyle}>Materials used per order</label>
+                    <div style={{ fontSize: 11, color: "#9a9690", marginTop: -3 }}>Stock will auto-deduct when ordered</div>
+                  </div>
+                  <button type="button" onClick={addEditMaterialRow}
+                    style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #e8e2d9", background: "#faf9f6", fontSize: 12, color: "#1a1814", cursor: "pointer", fontWeight: 500 }}>
+                    + Add
+                  </button>
+                </div>
+                {allMaterials.length === 0 ? (
+                  <div style={{ fontSize: 12, color: "#b5b1aa", padding: "10px 0" }}>No materials found. Add some in Inventory first.</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 90px 32px", gap: 8 }}>
+                      {["Material", "Qty / order", ""].map(h => (
+                        <div key={h} style={{ fontSize: 10, fontWeight: 600, color: "#9a9690", textTransform: "uppercase", letterSpacing: "0.5px" }}>{h}</div>
+                      ))}
+                    </div>
+                    {editData.materials.map((row, i) => (
+                      <MaterialRow
+                        key={i}
+                        row={row}
+                        allMaterials={allMaterials}
+                        onChange={(field, val) => updateEditMaterialRow(i, field, val)}
+                        onRemove={() => removeEditMaterialRow(i)}
+                        canRemove={editData.materials.length > 1}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div style={{
-              padding: "14px 24px", borderTop: "1px solid #f0ede8",
-              display: "flex", gap: 10, justifyContent: "flex-end",
-              background: "#fdfcfb",
-            }}>
-              <button
-                onClick={() => setEditModal(false)}
-                style={{
-                  padding: "9px 18px", borderRadius: 10, background: "none",
-                  border: "1px solid #e8e2d9", fontSize: 13, color: "#6b6860", cursor: "pointer",
-                }}>
+            {/* Footer */}
+            <div style={{ padding: "14px 24px", borderTop: "1px solid #f0ede8", display: "flex", gap: 10, justifyContent: "flex-end", background: "#fdfcfb" }}>
+              <button onClick={() => setEditModal(false)}
+                style={{ padding: "9px 18px", borderRadius: 10, background: "none", border: "1px solid #e8e2d9", fontSize: 13, color: "#6b6860", cursor: "pointer" }}>
                 Cancel
               </button>
-              <button
-                onClick={handleEditSave}
-                disabled={editSaving}
-                style={{
-                  padding: "9px 22px", borderRadius: 10,
-                  background: editSaving ? "#d0ccc4" : "#1a1814",
-                  color: editSaving ? "#9a9690" : "#fff",
-                  border: "none", fontSize: 13, fontWeight: 600,
-                  cursor: editSaving ? "not-allowed" : "pointer",
-                }}>
+              <button onClick={handleEditSave} disabled={editSaving}
+                style={{ padding: "9px 22px", borderRadius: 10, background: editSaving ? "#d0ccc4" : "#1a1814", color: editSaving ? "#9a9690" : "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: editSaving ? "not-allowed" : "pointer" }}>
                 {editSaving ? "Saving..." : "Save Changes"}
               </button>
             </div>
@@ -296,7 +350,7 @@ export default function ProductsManagement() {
         }
       `}</style>
 
-      {/* Header */}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1a1814", letterSpacing: "-0.5px" }}>Products</h2>
@@ -309,7 +363,7 @@ export default function ProductsManagement() {
         </button>
       </div>
 
-      {/* Add Product Form (unchanged) */}
+      {/* ── Add Product Form ────────────────────────────────────────────────── */}
       {showForm && (
         <form onSubmit={handleSubmit} style={{ background: "#fff", border: "1px solid #e8e2d9", borderRadius: 16, overflow: "hidden" }}>
           <div style={{ padding: "18px 24px", borderBottom: "1px solid #f0ede8", background: "#fdfcfb" }}>
@@ -318,25 +372,19 @@ export default function ProductsManagement() {
 
           <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 24 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+              {/* Photo */}
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <div>
                   <label style={labelStyle}>Photo URL</label>
-                  <input
-                    style={inputStyle}
-                    value={form.photoUrl}
+                  <input style={inputStyle} value={form.photoUrl}
                     onChange={e => { setForm(f => ({ ...f, photoUrl: e.target.value })); setPhotoPreview(e.target.value); }}
-                    placeholder="https://example.com/coffee.jpg"
-                  />
+                    placeholder="https://example.com/coffee.jpg" />
                 </div>
                 <div style={{ width: "100%", aspectRatio: "4/3", borderRadius: 10, border: "1px solid #e8e2d9", overflow: "hidden", background: "#f5f3ee", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {photoPreview ? (
-                    <img src={photoPreview} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setPhotoPreview("")} />
-                  ) : (
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 32, marginBottom: 6 }}>🖼️</div>
-                      <div style={{ fontSize: 11, color: "#9a9690" }}>Paste an image URL above to preview</div>
-                    </div>
-                  )}
+                  {photoPreview
+                    ? <img src={photoPreview} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setPhotoPreview("")} />
+                    : <div style={{ textAlign: "center" }}><div style={{ fontSize: 32, marginBottom: 6 }}>🖼️</div><div style={{ fontSize: 11, color: "#9a9690" }}>Paste an image URL above to preview</div></div>
+                  }
                 </div>
                 {photoPreview && (
                   <button type="button" onClick={() => { setPhotoPreview(""); setForm(f => ({ ...f, photoUrl: "" })); }}
@@ -346,6 +394,7 @@ export default function ProductsManagement() {
                 )}
               </div>
 
+              {/* Basic info */}
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div>
                   <label style={labelStyle}>Product name</label>
@@ -368,6 +417,7 @@ export default function ProductsManagement() {
                   <textarea style={{ ...inputStyle, resize: "none", height: 72 }} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Short description..." />
                 </div>
 
+                {/* Sizes toggle */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 10, border: "1px solid #e8e2d9", background: "#fdfcfb" }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1814" }}>Multiple sizes</div>
@@ -388,6 +438,7 @@ export default function ProductsManagement() {
               </div>
             </div>
 
+            {/* Sizes */}
             {form.hasSizes && (
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -425,40 +476,40 @@ export default function ProductsManagement() {
               </div>
             )}
 
+            {/* ── Materials section ───────────────────────────────────────── */}
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div>
-                  <label style={labelStyle}>Ingredients</label>
-                  {totalIngredientCost > 0 && (
-                    <span style={{ fontSize: 12, color: "#6b6860" }}>Total cost: <strong style={{ color: "#1a1814" }}>{formatCurrency(totalIngredientCost)}</strong></span>
-                  )}
+                  <label style={labelStyle}>Materials used per order</label>
+                  <div style={{ fontSize: 11, color: "#9a9690", marginTop: -2 }}>Stock auto-deducts when this product is ordered</div>
                 </div>
-                <button type="button" onClick={addIngredient}
+                <button type="button" onClick={addMaterialRow}
                   style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #e8e2d9", background: "#faf9f6", fontSize: 12, color: "#1a1814", cursor: "pointer", fontWeight: 500 }}>
-                  + Add ingredient
+                  + Add material
                 </button>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px 90px 32px", gap: 8 }}>
-                  {["Ingredient", "Qty", "Unit", "Cost (₱)", ""].map(h => (
-                    <div key={h} style={{ fontSize: 10, fontWeight: 600, color: "#9a9690", textTransform: "uppercase", letterSpacing: "0.5px" }}>{h}</div>
+
+              {allMaterials.length === 0 ? (
+                <div style={{ fontSize: 12, color: "#b5b1aa", padding: "10px 0" }}>No materials found. Add some in Inventory first.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 90px 32px", gap: 8 }}>
+                    {["Material", "Qty / order", ""].map(h => (
+                      <div key={h} style={{ fontSize: 10, fontWeight: 600, color: "#9a9690", textTransform: "uppercase", letterSpacing: "0.5px" }}>{h}</div>
+                    ))}
+                  </div>
+                  {form.materials.map((row, i) => (
+                    <MaterialRow
+                      key={i}
+                      row={row}
+                      allMaterials={allMaterials}
+                      onChange={(field, val) => updateMaterialRow(i, field, val)}
+                      onRemove={() => removeMaterialRow(i)}
+                      canRemove={form.materials.length > 1}
+                    />
                   ))}
                 </div>
-                {form.ingredients.map((ing, i) => (
-                  <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px 90px 32px", gap: 8, alignItems: "center" }}>
-                    <input style={inputStyle} value={ing.name} onChange={e => updateIngredient(i, "name", e.target.value)} placeholder="e.g. Espresso" />
-                    <input style={inputStyle} type="number" min="0" value={ing.quantity} onChange={e => updateIngredient(i, "quantity", e.target.value)} placeholder="0" />
-                    <select style={inputStyle} value={ing.unit} onChange={e => updateIngredient(i, "unit", e.target.value)}>
-                      {UNITS.map(u => <option key={u}>{u}</option>)}
-                    </select>
-                    <input style={inputStyle} type="number" min="0" value={ing.cost} onChange={e => updateIngredient(i, "cost", e.target.value)} placeholder="0.00" />
-                    <button type="button" onClick={() => removeIngredient(i)}
-                      style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #fca5a5", background: "none", color: "#dc2626", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
+              )}
             </div>
 
             <div style={{ display: "flex", gap: 10 }}>
@@ -475,7 +526,7 @@ export default function ProductsManagement() {
         </form>
       )}
 
-      {/* Category Filter */}
+      {/* ── Category Filter ─────────────────────────────────────────────────── */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {["All", ...CATEGORIES].map(cat => (
           <button key={cat} onClick={() => setActiveCategory(cat)}
@@ -485,7 +536,7 @@ export default function ProductsManagement() {
         ))}
       </div>
 
-      {/* Product Grid */}
+      {/* ── Product Grid ────────────────────────────────────────────────────── */}
       {loading ? <p style={{ fontSize: 13, color: "#9a9690" }}>Loading...</p> : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
           {filtered.map(p => (
@@ -522,13 +573,17 @@ export default function ProductsManagement() {
                     {p.stock <= 0 ? "Out of stock" : `${p.stock} in stock`}
                   </span>
                 </div>
-                {p.ingredients?.length > 0 && (
-                  <div style={{ fontSize: 10, color: "#9a9690", marginBottom: 10, lineHeight: 1.6, borderTop: "1px solid #f0ede8", paddingTop: 8 }}>
-                    {p.ingredients.map((ing, i) => (
-                      <span key={i}>{ing.name}{ing.quantity ? ` ${ing.quantity}${ing.unit}` : ""}{i < p.ingredients.length - 1 ? " · " : ""}</span>
-                    ))}
+
+                {/* Materials badge on card */}
+                {p.materials?.length > 0 && (
+                  <div style={{ fontSize: 10, color: "#9a9690", marginBottom: 10, lineHeight: 1.7, borderTop: "1px solid #f0ede8", paddingTop: 8 }}>
+                    {p.materials.map((mat, i) => {
+                      const label = getMaterialLabel(mat);
+                      return label ? <span key={i}>{label}{i < p.materials.length - 1 ? " · " : ""}</span> : null;
+                    })}
                   </div>
                 )}
+
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => handleEdit(p)}
                     style={{ flex: 1, padding: "6px", borderRadius: 8, border: "1px solid #e8e2d9", background: "none", fontSize: 12, color: "#1a1814", cursor: "pointer", fontWeight: 500 }}>

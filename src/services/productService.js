@@ -17,28 +17,27 @@ export const deleteProduct = (id) =>
   remove(ref(rtdb, `products/${id}`));
 
 export const checkProductAvailability = async (products) => {
-  // Fetch all ingredients from RTDB
-  const snap = await get(ref(rtdb, "ingredients"));
-  const ingredients = snap.exists() ? snap.val() : {};
+  // Fetch all materials from RTDB
+  const snap = await get(ref(rtdb, "materials"));
+  const materialsMap = snap.exists() ? snap.val() : {};
 
   return products.map((product) => {
-    // If the product has no ingredient requirements, it's always available
-    if (!product.ingredients || product.ingredients.length === 0) {
+    // No material requirements — always available
+    if (!product.materials || product.materials.length === 0) {
       return { ...product, available: true, blockedBy: [] };
     }
 
-    // Find which required ingredients are out of stock
-    const blockedBy = product.ingredients.filter((ingredientId) => {
-      const ingredient = ingredients[ingredientId];
-      return !ingredient || ingredient.stock <= 0;
+    // Find which required materials are out of stock
+    const blockedBy = product.materials.filter(({ materialId }) => {
+      const material = materialsMap[materialId];
+      return !material || Number(material.stock) <= 0;
     });
 
     return {
       ...product,
       available: blockedBy.length === 0,
-      // Map IDs to names for the toast message in POS.jsx
       blockedBy: blockedBy.map(
-        (id) => ingredients[id]?.name || id
+        ({ materialId }) => materialsMap[materialId]?.name || materialId
       ),
     };
   });
