@@ -1,51 +1,30 @@
-import { ref, push, get, update, remove } from "firebase/database";
+
+import { ref, get, push, set, update, remove } from "firebase/database";
 import { rtdb } from "./firebase";
 
-export const getMaterials = async () => {
-  try {
-    const snap = await get(ref(rtdb, "materials"));
-    if (!snap.exists()) return [];
-    return Object.entries(snap.val()).map(([id, val]) => ({ id, ...val }));
-  } catch (error) {
-    console.error("Error fetching materials:", error);
-    return [];
-  }
-};
+const PATH = "materials";
 
-export const addMaterial = async (data) => {
-  try {
-    const newRef = push(ref(rtdb, "materials"));
-    await update(ref(rtdb), {
-      [`materials/${newRef.key}`]: {
-        ...data,
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
-    });
-    return newRef.key;
-  } catch (error) {
-    console.error("Error adding material:", error);
-    throw error;
-  }
-};
+// strip the client-side id so it never gets saved inside the record
+const clean = ({ id, ...data }) => data;
 
-export const updateMaterial = async (id, data) => {
-  try {
-    await update(ref(rtdb, `materials/${id}`), {
-      ...data,
-      updatedAt: Date.now()
-    });
-  } catch (error) {
-    console.error("Error updating material:", error);
-    throw error;
-  }
-};
+export async function getMaterials() {
+  const snap = await get(ref(rtdb, PATH));
+  const val = snap.val() || {};
+  return Object.entries(val)
+    .map(([id, data]) => ({ id, ...data }))
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+}
 
-export const deleteMaterial = async (id) => {
-  try {
-    await remove(ref(rtdb, `materials/${id}`));
-  } catch (error) {
-    console.error("Error deleting material:", error);
-    throw error;
-  }
-};
+export async function addMaterial(data) {
+  const r = push(ref(rtdb, PATH));
+  await set(r, clean(data));
+  return r.key;
+}
+
+export async function updateMaterial(id, data) {
+  await update(ref(rtdb, `${PATH}/${id}`), clean(data));
+}
+
+export async function deleteMaterial(id) {
+  await remove(ref(rtdb, `${PATH}/${id}`));
+}

@@ -1,8 +1,12 @@
 // src/components/cashier/POS.jsx
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ref, get, push, set, serverTimestamp } from "firebase/database";
+import { ref, get, push, set, onValue, serverTimestamp } from "firebase/database";
 import { rtdb } from "../../services/firebase";
 import { useAuth } from "../../contexts/AuthContext";
+import {
+  MATERIALS_PATH, CUP_LABEL, SIZES, findCups,
+  needsSize, priceForSize, deductCups,
+} from "../../services/cupService";
 import OrdersTab from "./OrdersTab";
 
 const PRODUCTS_PATH = "products";
@@ -12,6 +16,66 @@ function peso(n) {
   return `₱${Math.round(n).toLocaleString("en-PH")}`;
 }
 
+/* ───────────────────────── Size picker ───────────────────────── */
+function SizeModal({ product, cupStock, onPick, onCancel }) {
+  return (
+    <div
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+      style={{
+        position: "fixed", inset: 0, background: "rgba(26,24,20,0.55)",
+        display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50,
+      }}
+    >
+      <div style={{ background: "#fff", borderRadius: 16, padding: "28px 28px 22px", width: 340 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1814", marginBottom: 2 }}>{product.name}</div>
+        <div style={{ fontSize: 12, color: "#a8a39c", marginBottom: 18 }}>Choose a size</div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {SIZES.map((size) => {
+            const left = cupStock[size]?.stock;
+            const out = left !== undefined && left <= 0;
+            return (
+              <button
+                key={size}
+                disabled={out}
+                onClick={() => onPick(size)}
+                style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  padding: "12px 14px", borderRadius: 10, border: "1px solid #e8e4dc",
+                  background: out ? "#f5f3ee" : "#fdfcfa", cursor: out ? "not-allowed" : "pointer",
+                  opacity: out ? 0.55 : 1, fontFamily: "inherit", textAlign: "left",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1814" }}>{size}</div>
+                  <div style={{ fontSize: 11, color: out ? "#c0392b" : "#a8a39c" }}>
+                    {CUP_LABEL[size]} cup · {out ? "out of stock" : left !== undefined ? `${left} left` : ""}
+                  </div>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#2d2260" }}>
+                  {peso(priceForSize(product, size))}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={onCancel}
+          style={{
+            width: "100%", marginTop: 14, padding: "10px 0", borderRadius: 8,
+            border: "1px solid #e8e4dc", background: "transparent",
+            color: "#8a8580", fontSize: 13, fontWeight: 600, cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────── Scan to pay ───────────────────────── */
 function ScanToPayModal({ amount, onConfirm, onCancel, submitting }) {
   const [value, setValue] = useState("");
   const inputRef = useRef(null);
@@ -91,9 +155,11 @@ function ScanToPayModal({ amount, onConfirm, onCancel, submitting }) {
   );
 }
 
+/* ───────────────────────── POS ───────────────────────── */
 export default function POS() {
   const { user, logout } = useAuth();
   const [products, setProducts] = useState([]);
+  const [cupStock, setCupStock] = useState({}); // { Tall: {stock,min}, Grande: {...}, Venti: {...} } from /materials
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [category, setCategory] = useState("All");
@@ -103,6 +169,7 @@ export default function POS() {
   const [submitting, setSubmitting] = useState(false);
   const [lastOrder, setLastOrder] = useState(null);
   const [tab, setTab] = useState("new-order"); // "new-order" | "orders"
+  const [sizeFor, setSizeFor] = useState(null); // product waiting for a size
 
   useEffect(() => {
     let active = true;
@@ -119,7 +186,13 @@ export default function POS() {
       .finally(() => {
         if (active) setLoading(false);
       });
-    return () => { active = false; };
+    // live cup stock straight from the database
+    const unsub = onValue(
+      ref(rtdb, MATERIALS_PATH),
+      (snap) => setCupStock(findCups(snap.val())),
+      () => {}
+    );
+    return () => { active = false; unsub(); };
   }, []);
 
   useEffect(() => {
@@ -139,26 +212,46 @@ export default function POS() {
 
   const total = useMemo(() => cart.reduce((s, item) => s + item.price * item.quantity, 0), [cart]);
 
-  function addToCart(product) {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.id === product.id);
-      if (existing) {
-        return prev.map((i) => (i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
-      }
-      return [...prev, { id: product.id, name: product.name || "Unnamed item", price: product.price || 0, quantity: 1 }];
-    });
+  // Tapping a product: drinks ask for a size first, food goes straight in.
+  function handleProductClick(product) {
+    if (needsSize(product)) setSizeFor(product);
+    else addToCart(product, null);
   }
 
-  function changeQty(id, delta) {
+  function addToCart(product, size) {
+    const key = size ? `${product.id}__${size}` : product.id;
+    const price = size ? priceForSize(product, size) : product.price || 0;
+    const name = product.name || "Unnamed item";
+    setCart((prev) => {
+      const existing = prev.find((i) => i.key === key);
+      if (existing) {
+        return prev.map((i) => (i.key === key ? { ...i, quantity: i.quantity + 1 } : i));
+      }
+      return [
+        ...prev,
+        {
+          key,
+          productId: product.id,
+          name: size ? `${name} (${size})` : name,
+          size,
+          price,
+          quantity: 1,
+        },
+      ];
+    });
+    setSizeFor(null);
+  }
+
+  function changeQty(key, delta) {
     setCart((prev) =>
       prev
-        .map((i) => (i.id === id ? { ...i, quantity: i.quantity + delta } : i))
+        .map((i) => (i.key === key ? { ...i, quantity: i.quantity + delta } : i))
         .filter((i) => i.quantity > 0)
     );
   }
 
-  function removeItem(id) {
-    setCart((prev) => prev.filter((i) => i.id !== id));
+  function removeItem(key) {
+    setCart((prev) => prev.filter((i) => i.key !== key));
   }
 
   function clearCart() {
@@ -173,14 +266,24 @@ export default function POS() {
     try {
       const orderRef = push(ref(rtdb, ORDERS_PATH));
       await set(orderRef, {
-  items: cart.map(({ name, price, quantity }) => ({ name, price, quantity })),
-  total,
-  status: "pending",
-  createdAt: serverTimestamp(),
-  paymentMethod,
-  cashier: { uid: user?.uid || null, name: user?.name || user?.email || "Unknown" },
-  ...extra,
-});
+        items: cart.map(({ productId, name, size, price, quantity }) => ({
+          productId, name, size: size || null, price, quantity,
+        })),
+        total,
+        status: "pending",
+        createdAt: serverTimestamp(),
+        paymentMethod,
+        cashier: { uid: user?.uid || null, name: user?.name || user?.email || "Unknown" },
+        ...extra,
+      });
+
+      // Order is saved — now take the cups out of inventory.
+      try {
+        await deductCups(cart);
+      } catch (cupErr) {
+        setError("Order saved, but cup stock could not be updated: " + (cupErr.message || "unknown error"));
+      }
+
       setLastOrder({ id: orderRef.key, total, itemCount: cart.length });
       clearCart();
     } catch (err) {
@@ -255,6 +358,29 @@ export default function POS() {
               </div>
             ) : (
               <>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#a8a39c", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    🥤 Cups left
+                  </span>
+                  {SIZES.map((size) => {
+                    const c = cupStock[size];
+                    if (!c) return null;
+                    const out = c.stock <= 0;
+                    const low = !out && c.stock <= c.min;
+                    return (
+                      <span
+                        key={size}
+                        style={{
+                          fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 20,
+                          background: out ? "#fef2f2" : low ? "#fff7ed" : "#f0fdf4",
+                          color: out ? "#dc2626" : low ? "#b45309" : "#166534",
+                        }}
+                      >
+                        {CUP_LABEL[size]} ({size}): {out ? "Out" : c.stock}
+                      </span>
+                    );
+                  })}
+                </div>
                 <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto", paddingBottom: 4 }}>
                   {categories.map((c) => (
                     <button
@@ -275,14 +401,16 @@ export default function POS() {
                   {visibleProducts.map((p) => (
                     <button
                       key={p.id}
-                      onClick={() => addToCart(p)}
+                      onClick={() => handleProductClick(p)}
                       style={{
                         padding: "16px 12px", borderRadius: 10, border: "1px solid #e8e4dc",
                         background: "#fdfcfa", textAlign: "left", cursor: "pointer",
                       }}
                     >
                       <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1814", marginBottom: 6 }}>{p.name}</div>
-                      <div style={{ fontSize: 12, color: "#8a8580" }}>{peso(p.price || 0)}</div>
+                      <div style={{ fontSize: 12, color: "#8a8580" }}>
+                        {needsSize(p) ? `from ${peso(p.price || 0)}` : peso(p.price || 0)}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -299,20 +427,20 @@ export default function POS() {
                 <div style={{ fontSize: 13, color: "#a8a39c" }}>Tap items from the menu to add them here.</div>
               ) : (
                 cart.map((item) => (
-                  <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <div key={item.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 500, color: "#1a1814" }}>{item.name}</div>
                       <div style={{ fontSize: 11, color: "#a8a39c" }}>{peso(item.price)} each</div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <button onClick={() => changeQty(item.id, -1)} style={qtyBtnStyle}>−</button>
+                      <button onClick={() => changeQty(item.key, -1)} style={qtyBtnStyle}>−</button>
                       <span style={{ fontSize: 13, fontWeight: 600, minWidth: 18, textAlign: "center" }}>{item.quantity}</span>
-                      <button onClick={() => changeQty(item.id, 1)} style={qtyBtnStyle}>+</button>
+                      <button onClick={() => changeQty(item.key, 1)} style={qtyBtnStyle}>+</button>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1814", minWidth: 64, textAlign: "right" }}>
                       {peso(item.price * item.quantity)}
                     </div>
-                    <button onClick={() => removeItem(item.id)} style={{ border: "none", background: "transparent", color: "#c0392b", fontSize: 14, cursor: "pointer", padding: "0 2px" }}>
+                    <button onClick={() => removeItem(item.key)} style={{ border: "none", background: "transparent", color: "#c0392b", fontSize: 14, cursor: "pointer", padding: "0 2px" }}>
                       ×
                     </button>
                   </div>
@@ -376,6 +504,15 @@ export default function POS() {
         <div style={{ position: "fixed", bottom: 20, right: 20, background: "#3a8c5f", color: "#fff", padding: "12px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
           ✓ Order saved — {peso(lastOrder.total)} ({lastOrder.itemCount} item{lastOrder.itemCount === 1 ? "" : "s"})
         </div>
+      )}
+
+      {sizeFor && (
+        <SizeModal
+          product={sizeFor}
+          cupStock={cupStock}
+          onPick={(size) => addToCart(sizeFor, size)}
+          onCancel={() => setSizeFor(null)}
+        />
       )}
 
       {scanning && (

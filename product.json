@@ -1,0 +1,34 @@
+{
+  "products": {
+    "coffee_1": {
+      "name": "Brewed Coffee",
+      "price": 55,
+      "stock": 50
+    },
+    "coffee_2": {
+      "name": "Espresso",
+      "price": 70,
+      "stock": 40
+    },
+    "coffee_3": {
+      "name": "Cappuccino",
+      "price": 95,
+      "stock": 35
+    },
+    "coffee_4": {
+      "name": "Latte",
+      "price": 95,
+      "stock": 35
+    },
+    "coffee_5": {
+      "name": "Americano",
+      "price": 80,
+      "stock": 40
+    },
+    "food_1": {
+      "name": "Chocolate Cake",
+      "price": 85,
+      "stock": 20
+    }
+  }
+}
