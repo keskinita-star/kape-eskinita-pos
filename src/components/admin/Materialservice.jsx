@@ -1,22 +1,31 @@
-import { ref, push, get, update, remove } from "firebase/database";
-import { rtdb } from "./firebase";
+// src/components/admin/Materialservice.jsx
+// Reads/writes the /materials node in Firebase Realtime Database.
+import { ref, get, push, set, update, remove } from "firebase/database";
+import { rtdb } from "../../services/firebase";
 
-export const getMaterials = async () => {
-  const snap = await get(ref(rtdb, "materials"));
-  if (!snap.exists()) return [];
-  return Object.entries(snap.val()).map(([id, val]) => ({ id, ...val }));
-};
+const PATH = "materials";
 
-export const addMaterial = async (data) => {
-  const newRef = push(ref(rtdb, "materials"));
-  await update(ref(rtdb, `materials/${newRef.key}`), data);
-  return newRef.key;
-};
+// strip the client-side id so it never gets saved inside the record
+const clean = ({ id, ...data }) => data;
 
-export const updateMaterial = async (id, data) => {
-  await update(ref(rtdb, `materials/${id}`), data);
-};
+export async function getMaterials() {
+  const snap = await get(ref(rtdb, PATH));
+  const val = snap.val() || {};
+  return Object.entries(val)
+    .map(([id, data]) => ({ id, ...data }))
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+}
 
-export const deleteMaterial = async (id) => {
-  await remove(ref(rtdb, `materials/${id}`));
-};
+export async function addMaterial(data) {
+  const r = push(ref(rtdb, PATH));
+  await set(r, clean(data));
+  return r.key;
+}
+
+export async function updateMaterial(id, data) {
+  await update(ref(rtdb, `${PATH}/${id}`), clean(data));
+}
+
+export async function deleteMaterial(id) {
+  await remove(ref(rtdb, `${PATH}/${id}`));
+}

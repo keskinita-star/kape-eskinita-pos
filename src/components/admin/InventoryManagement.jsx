@@ -37,7 +37,15 @@ export default function InventoryManagement() {
   const [restockId, setRestockId] = useState(null);
   const [restockQty, setRestockQty] = useState("");
 
-  const load = () => getMaterials().then(m => { setMaterials(m); setLoading(false); });
+  const load = () =>
+    getMaterials()
+      .then(m => { setMaterials(m); })
+      .catch(err => {
+        console.error(err);
+        toast.error("Couldn't load materials: " + err.message);
+      })
+      .finally(() => setLoading(false));
+
   useEffect(() => { load(); }, []);
 
   const lowItems = materials.filter(m => Number(m.stock) > 0 && Number(m.stock) <= Number(m.minStock));
@@ -59,8 +67,9 @@ export default function InventoryManagement() {
       unit: form.unit,
       stock: Number(form.stock),
       minStock: Number(form.minStock),
-      costPerUnit: Number(form.costPerUnit),
       supplier: form.supplier,
+      // cost is optional
+      ...(form.costPerUnit !== "" && form.costPerUnit != null ? { costPerUnit: Number(form.costPerUnit) } : {}),
     };
     try {
       if (editing) {
@@ -82,7 +91,7 @@ export default function InventoryManagement() {
     setForm({
       name: item.name, category: item.category, unit: item.unit,
       stock: item.stock, minStock: item.minStock,
-      costPerUnit: item.costPerUnit, supplier: item.supplier || "",
+      costPerUnit: item.costPerUnit ?? "", supplier: item.supplier || "",
     });
     setEditing(item.id);
     setShowForm(true);
@@ -184,8 +193,8 @@ export default function InventoryManagement() {
             </div>
 
             <div>
-              <label style={lbl}>Cost per Unit (₱)</label>
-              <input type="number" min="0" step="0.01" style={inp} value={form.costPerUnit} onChange={e => setForm(f => ({ ...f, costPerUnit: e.target.value }))} placeholder="0.00" required />
+              <label style={lbl}>Cost per Unit (₱) — optional</label>
+              <input type="number" min="0" step="0.01" style={inp} value={form.costPerUnit} onChange={e => setForm(f => ({ ...f, costPerUnit: e.target.value }))} placeholder="0.00" />
             </div>
 
             <div style={{ gridColumn: "1/-1", display: "flex", gap: 10 }}>
@@ -275,7 +284,9 @@ export default function InventoryManagement() {
 
                     <td style={{ padding: "12px 14px", color: "#9a9690", fontSize: 12 }}>{item.minStock} {item.unit}</td>
 
-                    <td style={{ padding: "12px 14px", color: "#1a1814", fontWeight: 500 }}>{formatCurrency(item.costPerUnit)}/{item.unit}</td>
+                    <td style={{ padding: "12px 14px", color: "#1a1814", fontWeight: 500 }}>
+                      {item.costPerUnit != null && item.costPerUnit !== "" ? `${formatCurrency(item.costPerUnit)}/${item.unit}` : "—"}
+                    </td>
 
                     <td style={{ padding: "12px 14px", color: "#6b6860" }}>{item.supplier || "—"}</td>
 
